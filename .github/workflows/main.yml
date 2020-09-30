@@ -1,11 +1,13 @@
 # This is a basic workflow to help you get started with Actions
 
-name: Build and Deploy
+name: Build Docker image after every commit
 
 # Controls when the action will run. Triggers the workflow on push or pull request
 # events but only for the master branch
 on:
   push:
+    branches: [ master ]
+  pull_request: 
     branches: [ master ]
   
 
@@ -23,18 +25,32 @@ jobs:
         uses: actions/checkout@v2
 
       # Runs a single command using the runners shell
-      - name: Google Cloud Platform (GCP) CLI - gcloud
-        # You may pin to the exact commit or the version.
-        # uses: actions-hub/gcloud@17b98fe215012ebf5c69051303d1cd8646ea7691
-        uses: actions-hub/gcloud@307.0.0
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v1.1.1
         with:
-          # Arguments for the CLI command
-          version: '290.0.1'
-          service_account_key: ${{ secrets.RUN_SA_KEY }}
-          project_id: ${{ secrets.RUN_PROJECT }}
-
-      # Runs a set of commands using the runners shell
-      - name: Run a multi-line script
-        run: |
-          echo Add other actions to build,
-          echo test, and deploy your project.
+          # Username used to log in to a Docker registry. If not set then no login will occur
+          username: ${{ secrets.DOCKER_USERNAME }}
+          # Password or personal access token used to log in to a Docker registry. If not set then no login will occur
+          password: ${{ secrets.DOCKER_PASSWORD }}
+          key: 4bd9e531-1a23-4fd0-8a35-427114871c74
+          # Docker repository to tag the image with
+          repository: nsba95/nusmoneyimg 
+          # Automatically tags the built image with the git reference as per the readme
+          tag_with_ref: true
+        
+  send: 
+    name: Notify through Telegram about commit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: checkout actions/checkout@master
+        name: Checkout
+      - uses: appleboy/telegram-action@master
+        name: Send message
+        with:
+          to: ${{ secrets.TELEGRAM_TO }}
+          token: ${{ secrets.TELEGRAM_TOKEN }}
+          args: The ${{ github.event_name }} event has been triggered.
+        
+          
+          
+  
